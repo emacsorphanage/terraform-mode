@@ -34,6 +34,7 @@
 (require 'cl-lib)
 (require 'rx)
 (require 'hcl-mode)
+(require 'thingatpt)
 
 (defgroup terraform nil
   "Major mode of Terraform configuration file."
@@ -84,6 +85,37 @@
   (if terraform-format-on-save-mode
       (add-hook 'before-save-hook #'terraform-format-buffer nil t)
     (remove-hook 'before-save-hook #'terraform-format-buffer t)))
+
+(defun interpolate (list item)
+  "Places item between elements in list"
+  (cond ((null list) nil)
+        ((= (length list) 1) list)
+        (t (append (list (car list) item)
+                   (interpolate (cdr list) item)))))
+
+(defun provider (resource-name)
+  "Returns the provider associated with a resource-name"
+  (car (split-string resource-name "_")))
+
+(defun resource (resource-name)
+  "Returns the resource associated with a resource-name"
+  (apply #'concat
+         (interpolate (cdr (split-string resource-name "_")) "_")))
+
+(defun terraform-resource-url (resource)
+  "Returns the url containing the documentation for resource"
+  (format "https://www.terraform.io/docs/providers/%s/r/%s.html"
+          (provider resource)
+          (resource resource)))
+
+(defun terraform-open-doc ()
+  "Opens a browser at the URL documenting the resource-at-point"
+  (interactive)
+  (browse-url (terraform-resource-url (thing-at-point 'symbol))))
+
+(add-hook 'terraform-mode-hook
+          (lambda ()
+            (local-set-key (kbd "M-.") #'terraform-open-doc)))
 
 ;;;###autoload
 (define-derived-mode terraform-mode hcl-mode "Terraform"
