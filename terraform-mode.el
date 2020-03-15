@@ -27,7 +27,7 @@
 
 ;; Format the current buffer with terraform-format-buffer. To always
 ;; format terraform buffers when saving, use:
-;;   (add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
+;;   (setq terraform-format-on-save t)
 
 ;;; Code:
 
@@ -42,6 +42,10 @@
 (defcustom terraform-indent-level 2
   "The tab width to use when indenting."
   :type 'integer)
+
+(defcustom terraform-format-on-save nil
+  "Format buffer on save"
+  :type 'boolean)
 
 (defconst terraform--block-regexp
   "^\\s-*\\(provider\\|resource\\|data\\|module\\|variable\\|output\\)\\s-+\"")
@@ -62,6 +66,8 @@
     (,terraform--provisioner-regexp 1 font-lock-function-name-face)
     (,terraform--inner-block-regexp 1 font-lock-keyword-face)
     ,@hcl-font-lock-keywords))
+
+(if terraform-format-on-save (add-hook 'terraform-mode-hook #'terraform-format-on-save-mode))
 
 (defun terraform-format-buffer ()
   "Rewrite current buffer in a canonical format using terraform fmt."
